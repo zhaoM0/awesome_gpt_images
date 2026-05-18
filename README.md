@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Awesome Image Prompts
+
+A beautiful AI art prompt gallery with glassmorphism design, featuring multi-model comparison and smooth animations.
+
+## Features
+
+- **Glassmorphism UI** - Beautiful frosted glass effects throughout the interface
+- **Multi-Model Comparison** - See how the same prompt renders across different AI models
+- **Like & Bookmark** - Save your favorite prompts
+- **Submission System** - Submit your own prompts for community review
+- **Admin Panel** - Review and moderate submissions
+- **Smooth Animations** - Powered by Framer Motion
+- **Dark Mode** - Full theme support with next-themes
+- **Vercel Ready** - Optimized for Vercel deployment
+
+## Tech Stack
+
+- **Next.js 14** - App Router, React Server Components
+- **TypeScript** - Type-safe code
+- **Tailwind CSS v4** - Utility-first styling
+- **shadcn/ui** - High-quality UI components
+- **Framer Motion** - Smooth animations
+- **Prisma** - Database ORM
+- **NextAuth.js** - Authentication
+- **Vercel Blob** - Image storage
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- PostgreSQL database (use [Neon](https://neon.tech) for easy setup)
+
+### Installation
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Set up environment variables:
+```bash
+cp .env.example .env
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Edit `.env` and fill in your values:
+```env
+DATABASE_URL="postgresql://..."
+BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+NEXTAUTH_SECRET="your-secret-key"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Set up the database:
+```bash
+npm run db:push
+npm run db:seed
+```
 
-## Learn More
+4. Run the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/
+├── (main)/          # Main app layout
+├── prompt/[id]/     # Prompt detail page
+├── submit/          # Submit new prompt
+├── admin/           # Admin review panel
+└── api/             # API routes
 
-## Deploy on Vercel
+components/
+├── ui/              # shadcn components
+├── glass-card.tsx   # Glass effect card
+├── prompt-card.tsx  # Prompt card with animations
+└── ...
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+lib/
+├── prisma.ts        # Prisma client
+├── vercel-blob.ts   # Image upload utilities
+└── utils.ts         # Utilities
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development
+
+### Common Commands
+
+```bash
+# Development
+npm run dev
+
+# Build for production
+npm run build
+
+# Run production server
+npm run start
+
+# Database operations
+npm run db:generate    # Generate Prisma client
+npm run db:push        # Push schema to database
+npm run db:seed        # Seed sample data
+```
+
+### Adding New Components
+
+```bash
+# Add shadcn components
+npx shadcn@latest add [component-name]
+
+# Example:
+npx shadcn@latest add dialog
+```
+
+## Deployment on Vercel
+
+1. Push your code to GitHub
+2. Import project in [Vercel](https://vercel.com)
+3. Configure environment variables
+4. Deploy!
+
+### Database Setup
+
+For production, use [Neon](https://neon.tech) or similar PostgreSQL service.
+
+### Image Storage
+
+For image uploads, set up [Vercel Blob](https://vercel.com/docs/storage/vercel-blob).
+
+## License
+
+MIT
