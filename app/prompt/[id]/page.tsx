@@ -1,111 +1,57 @@
 "use client"
 
 import { notFound } from "next/navigation"
-import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Bookmark, Share2, Copy, Check, X, ZoomIn, Download } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Bookmark, Share2, Copy, Check, X, ZoomIn, ZoomOut, Download, Loader2, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/glass-card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, use } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-
-// Sample data - replace with database query
-const samplePrompt = {
-  id: "1",
-  title: "Cyberpunk City at Night",
-  content: "A futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, flying cars, holographic billboards, dramatic perspective, cinematic lighting, highly detailed, 8K",
-  description: "Create stunning cyberpunk cityscapes with this detailed prompt. Works great across multiple AI models with consistent results.",
-  category: "Sci-Fi",
-  createdAt: "2024-01-15",
-  images: [
-    {
-      id: "1-1",
-      url: "https://images.unsplash.com/photo-1575197886478-274d1e1d3c27?w=1200",
-      model: "DALL-E 3",
-      width: 1024,
-      height: 1024,
-    },
-    {
-      id: "1-2",
-      url: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=1200",
-      model: "Midjourney v6",
-      width: 1024,
-      height: 1024,
-    },
-    {
-      id: "1-3",
-      url: "https://images.unsplash.com/photo-1515630278258-407f66498911?w=1200",
-      model: "Stable Diffusion XL",
-      width: 1024,
-      height: 1024,
-    },
-    {
-      id: "1-4",
-      url: "https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=1200",
-      model: "DALL-E 2",
-      width: 1024,
-      height: 1024,
-    },
-    {
-      id: "1-5",
-      url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200",
-      model: "Leonardo AI",
-      width: 1024,
-      height: 1024,
-    },
-    {
-      id: "1-6",
-      url: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=1200",
-      model: "Midjourney v5",
-      width: 1024,
-      height: 1024,
-    },
-  ],
-  _count: { likes: 42, bookmarks: 18 },
-}
+import { promptsData } from "@/lib/prompts-data"
 
 export default function PromptDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  // In production, fetch from database
-  const prompt = samplePrompt
-  if (!prompt) return notFound()
-
-  const [selectedImage, setSelectedImage] = useState<typeof prompt.images[0] | null>(null)
+  const { id } = use(params)
+  const [prompt, setPrompt] = useState<typeof promptsData[0] | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [notFoundFlag, setNotFoundFlag] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<typeof promptsData[0]["images"][0] | null>(null)
   const [imageIndex, setImageIndex] = useState(0)
 
-  const openLightbox = useCallback((index: number) => {
-    setSelectedImage(prompt.images[index])
+  const openLightbox = useCallback((index: number, images: typeof promptsData[0]["images"]) => {
+    setSelectedImage(images[index])
     setImageIndex(index)
-  }, [prompt.images])
+  }, [])
 
   const closeLightbox = useCallback(() => {
     setSelectedImage(null)
   }, [])
 
-  const goToNext = useCallback(() => {
-    const nextIndex = (imageIndex + 1) % prompt.images.length
-    setSelectedImage(prompt.images[nextIndex])
+  const goToNext = useCallback((images: typeof promptsData[0]["images"]) => {
+    const nextIndex = (imageIndex + 1) % images.length
+    setSelectedImage(images[nextIndex])
     setImageIndex(nextIndex)
-  }, [imageIndex, prompt.images])
+  }, [imageIndex])
 
-  const goToPrev = useCallback(() => {
-    const prevIndex = (imageIndex - 1 + prompt.images.length) % prompt.images.length
-    setSelectedImage(prompt.images[prevIndex])
+  const goToPrev = useCallback((images: typeof promptsData[0]["images"]) => {
+    const prevIndex = (imageIndex - 1 + images.length) % images.length
+    setSelectedImage(images[prevIndex])
     setImageIndex(prevIndex)
-  }, [imageIndex, prompt.images])
+  }, [imageIndex])
 
   const downloadImage = useCallback(async () => {
-    if (!selectedImage) return
+    if (!selectedImage || !prompt) return
     try {
       const response = await fetch(selectedImage.url)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${prompt.title}-${selectedImage.model}.jpg`
+      a.download = `${prompt.title}-${selectedImage.model}.png`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -113,7 +59,31 @@ export default function PromptDetailPage({
     } catch (error) {
       console.error("Download failed:", error)
     }
-  }, [selectedImage, prompt.title])
+  }, [selectedImage, prompt])
+
+  useEffect(() => {
+    // Find the prompt by id
+    const foundPrompt = promptsData.find(p => p.id === id)
+    if (foundPrompt) {
+      setPrompt(foundPrompt)
+      setIsLoading(false)
+    } else {
+      setIsLoading(false)
+      setNotFoundFlag(true)
+    }
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
+  if (notFoundFlag || !prompt) {
+    return notFound()
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -135,7 +105,7 @@ export default function PromptDetailPage({
                 {prompt.category}
               </span>
               <Badge variant="outline" className="glass">
-                {prompt.images.length} models
+                {prompt.images.length} model{prompt.images.length > 1 ? 's' : ''}
               </Badge>
             </div>
             <p className="text-muted-foreground text-lg">{prompt.description}</p>
@@ -164,16 +134,16 @@ export default function PromptDetailPage({
       {/* Gallery Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">All Outputs ({prompt.images.length})</h2>
-          <p className="text-sm text-muted-foreground">Click to enlarge</p>
+          <h2 className="text-2xl font-bold">Generated Output{prompt.images.length > 1 ? `s (${prompt.images.length})` : ''}</h2>
+          {prompt.images.length > 1 && <p className="text-sm text-muted-foreground">Click to enlarge</p>}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${prompt.images.length === 1 ? 'grid-cols-1 max-w-sm mx-auto' : 'grid-cols-2 md:grid-cols-3'}`}>
           {prompt.images.map((image, index) => (
             <GalleryImage
               key={image.id}
               image={image}
               index={index}
-              onClick={() => openLightbox(index)}
+              onClick={() => openLightbox(index, prompt.images)}
             />
           ))}
         </div>
@@ -187,8 +157,8 @@ export default function PromptDetailPage({
             currentIndex={imageIndex}
             totalImages={prompt.images.length}
             onClose={closeLightbox}
-            onNext={goToNext}
-            onPrev={goToPrev}
+            onNext={() => goToNext(prompt.images)}
+            onPrev={() => goToPrev(prompt.images)}
             onDownload={downloadImage}
           />
         )}
@@ -249,8 +219,6 @@ function GalleryImage({
   image: {
     url: string
     model: string
-    width?: number
-    height?: number
   }
   index: number
   onClick: () => void
@@ -264,11 +232,11 @@ function GalleryImage({
       onClick={onClick}
     >
       <GlassCard className="overflow-hidden">
-        <div className="relative aspect-square">
+        <div className="relative aspect-[3/4] bg-black/5 dark:bg-white/5">
           <img
             src={image.url}
             alt={image.model}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -278,11 +246,6 @@ function GalleryImage({
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <p className="text-white font-medium">{image.model}</p>
-            {image.width && image.height && (
-              <p className="text-white/70 text-sm">
-                {image.width} × {image.height}
-              </p>
-            )}
           </div>
         </div>
       </GlassCard>
@@ -307,35 +270,93 @@ function Lightbox({
   onPrev: () => void
   onDownload: () => void
 }) {
+  const [zoom, setZoom] = useState(1)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  const handleZoomIn = () => setZoom(p => Math.min(p + 0.25, 3))
+  const handleZoomOut = () => setZoom(p => Math.max(p - 0.25, 0.5))
+  const handleResetZoom = () => { setZoom(1); setPosition({ x: 0, y: 0 }) }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    if (e.deltaY < 0) {
+      setZoom(p => Math.min(p + 0.1, 3))
+    } else {
+      setZoom(p => Math.max(p - 0.1, 0.5))
+    }
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom > 1) {
+      setIsDragging(true)
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+    }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && zoom > 1) {
+      e.preventDefault()
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+  }
+
+  const handleMouseUp = () => setIsDragging(false)
+
+  // Reset zoom when image changes
+  useEffect(() => {
+    setZoom(1)
+    setPosition({ x: 0, y: 0 })
+  }, [image.url])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center overflow-hidden"
       onClick={onClose}
     >
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-      >
-        <X className="h-6 w-6 text-white" />
-      </button>
+      {/* Top Controls */}
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <X className="h-6 w-6 text-white" />
+        </button>
+
+        {/* Image Counter */}
+        {totalImages > 1 && (
+          <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md">
+            <p className="text-white text-sm font-medium">
+              {currentIndex + 1} / {totalImages}
+            </p>
+          </div>
+        )}
+
+        {/* Spacer for balance */}
+        <div className="w-10" />
+      </div>
 
       {/* Navigation */}
       {totalImages > 1 && (
         <>
           <button
-            onClick={(e) => { e.stopPropagation(); onPrev() }}
-            className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            onClick={(e) => { e.stopPropagation(); onPrev(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
             aria-label="Previous image"
           >
             <ChevronLeft className="h-6 w-6 text-white" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onNext() }}
-            className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            onClick={(e) => { e.stopPropagation(); onNext(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
             aria-label="Next image"
           >
             <ChevronRight className="h-6 w-6 text-white" />
@@ -343,51 +364,101 @@ function Lightbox({
         </>
       )}
 
-      {/* Image Counter */}
-      {totalImages > 1 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md">
-          <p className="text-white text-sm font-medium">
-            {currentIndex + 1} / {totalImages}
-          </p>
-        </div>
-      )}
-
-      {/* Image */}
+      {/* Image Container */}
       <motion.div
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         exit={{ scale: 0.9 }}
-        className="relative max-w-5xl max-h-[85vh] px-4"
+        className="relative w-full h-full flex items-center justify-center overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onWheel={handleWheel}
       >
         <img
           src={image.url}
           alt={image.model}
-          className="max-w-full max-h-[85vh] object-contain rounded-lg"
+          draggable={false}
+          className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+            cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         />
-
-        {/* Image Info Bar */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full bg-black/50 backdrop-blur-xl">
-          <p className="text-white font-medium">{image.model}</p>
-          <button
-            onClick={onDownload}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            title="Download"
-          >
-            <Download className="h-4 w-4 text-white" />
-          </button>
-        </div>
       </motion.div>
 
-      {/* Thumbnail Strip */}
-      {totalImages > 3 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-4">
+      {/* Bottom Controls */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-3 rounded-2xl bg-black/60 backdrop-blur-xl z-10">
+        {/* Zoom Out */}
+        <button
+          onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          title="Zoom out"
+        >
+          <ZoomOut className="h-5 w-5 text-white" />
+        </button>
+
+        {/* Zoom Level */}
+        <span className="text-white text-sm font-medium min-w-[3rem] text-center">
+          {Math.round(zoom * 100)}%
+        </span>
+
+        {/* Zoom In */}
+        <button
+          onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          title="Zoom in"
+        >
+          <ZoomIn className="h-5 w-5 text-white" />
+        </button>
+
+        {/* Reset */}
+        {zoom !== 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleResetZoom(); }}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            title="Reset zoom"
+          >
+            <RotateCw className="h-5 w-5 text-white" />
+          </button>
+        )}
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-white/30 mx-2" />
+
+        {/* Model Name */}
+        <p className="text-white font-medium">{image.model}</p>
+
+        {/* Download */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDownload(); }}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          title="Download"
+        >
+          <Download className="h-5 w-5 text-white" />
+        </button>
+      </div>
+
+      {/* Thumbnail Indicators */}
+      {totalImages > 1 && totalImages > 3 && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 px-4 z-10">
           {Array.from({ length: totalImages }).map((_, i) => (
             <button
               key={i}
-              onClick={(e) => { e.stopPropagation(); i === currentIndex ? null : (i < currentIndex ? onPrev() : onNext()) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                const diff = i - currentIndex
+                if (diff < 0) {
+                  for (let j = 0; j < -diff; j++) onPrev()
+                } else if (diff > 0) {
+                  for (let j = 0; j < diff; j++) onNext()
+                }
+              }}
               className={`w-2 h-2 rounded-full transition-all ${
-                i === currentIndex ? 'bg-white' : 'bg-white/30'
+                i === currentIndex ? 'bg-white scale-125' : 'bg-white/30'
               }`}
             />
           ))}

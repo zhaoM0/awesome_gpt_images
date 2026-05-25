@@ -2,93 +2,96 @@
 
 import { PromptGrid } from "@/components/prompt-grid"
 import { GlassCard } from "@/components/glass-card"
-import { Sparkles, Search, TrendingUp, Clock } from "lucide-react"
+import { Sparkles, Search, TrendingUp, Clock, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { motion } from "framer-motion"
-
-// Sample data - replace with database query
-const samplePrompts = [
-  {
-    id: "1",
-    title: "Cyberpunk City at Night",
-    content: "A futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, flying cars, holographic billboards, dramatic perspective, cinematic lighting, highly detailed, 8K",
-    description: "Create stunning cyberpunk cityscapes with this detailed prompt",
-    category: "Sci-Fi",
-    images: [
-      { id: "1-1", url: "https://images.unsplash.com/photo-1575197886478-274d1e1d3c27?w=800", model: "DALL-E 3" },
-      { id: "1-2", url: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=800", model: "Midjourney v6" },
-      { id: "1-3", url: "https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800", model: "Stable Diffusion XL" },
-    ],
-    _count: { likes: 42, bookmarks: 18 },
-  },
-  {
-    id: "2",
-    title: "Magical Forest Portal",
-    content: "An enchanted forest with a glowing mystical portal, fireflies, ancient trees with bioluminescent plants, ethereal atmosphere, fantasy art, detailed textures",
-    description: "Magical fantasy scenes with glowing elements",
-    category: "Fantasy",
-    images: [
-      { id: "2-1", url: "https://images.unsplash.com/photo-1518173946687-a4c036bc2b2f?w=800", model: "DALL-E 3" },
-      { id: "2-2", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", model: "Stable Diffusion" },
-      { id: "2-3", url: "https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=800", model: "Midjourney v6" },
-    ],
-    _count: { likes: 35, bookmarks: 12 },
-  },
-  {
-    id: "3",
-    title: "Steampunk Portrait",
-    content: "Victorian era steampunk portrait, brass gears, steam pipes, goggles, intricate clockwork mechanisms, sepia tones with copper highlights, detailed facial features",
-    description: "Victorian steampunk aesthetic with mechanical elements",
-    category: "Steampunk",
-    images: [
-      { id: "3-1", url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800", model: "Midjourney v6" },
-      { id: "3-2", url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800", model: "DALL-E 3" },
-    ],
-    _count: { likes: 28, bookmarks: 9 },
-  },
-  {
-    id: "4",
-    title: "Abstract Liquid Art",
-    content: "Colorful abstract liquid art, swirling iridescent fluids, oil and water mixture, macro photography, vibrant colors, smooth gradients, hypnotic patterns",
-    description: "Mesmerizing abstract liquid compositions",
-    category: "Abstract",
-    images: [
-      { id: "4-1", url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800", model: "DALL-E 3" },
-      { id: "4-2", url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800", model: "Stable Diffusion XL" },
-      { id: "4-3", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800", model: "Leonardo AI" },
-    ],
-    _count: { likes: 51, bookmarks: 23 },
-  },
-  {
-    id: "5",
-    title: "Japanese Garden at Sunrise",
-    content: "Traditional Japanese garden at sunrise, cherry blossoms falling, koi pond with lily pads, torii gate in background, misty atmosphere, golden hour lighting, serene",
-    description: "Peaceful Japanese landscapes with natural beauty",
-    category: "Nature",
-    images: [
-      { id: "5-1", url: "https://images.unsplash.com/photo-1528360983277-13d9b152c6d1?w=800", model: "Midjourney" },
-    ],
-    _count: { likes: 67, bookmarks: 31 },
-  },
-  {
-    id: "6",
-    title: "Retro Synthwave Scene",
-    content: "80s synthwave aesthetic, retro grid landscape, purple and pink neon sky, palm tree silhouettes, vintage computer graphics style, nostalgic VHS atmosphere",
-    description: "Classic 80s retro-futuristic synthwave vibes",
-    category: "Retro",
-    images: [
-      { id: "6-1", url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", model: "DALL-E 3" },
-      { id: "6-2", url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=800", model: "Stable Diffusion" },
-    ],
-    _count: { likes: 44, bookmarks: 19 },
-  },
-]
+import { promptsData, categories } from "@/lib/prompts-data"
+import { useState, useMemo, useEffect } from "react"
+import type { PromptData } from "@/lib/prompts-data"
 
 export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [prompts, setPrompts] = useState<PromptData[]>(promptsData)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch prompts from API
+  useEffect(() => {
+    async function fetchPrompts() {
+      try {
+        const res = await fetch('/api/prompts')
+        if (res.ok) {
+          const data = await res.json()
+          // Transform API data to match PromptData format
+          const transformed = data.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            content: p.content,
+            description: p.description,
+            category: p.category,
+            images: p.images.map((img: any) => ({
+              id: img.id,
+              url: img.url,
+              model: img.model,
+            })),
+            _count: p._count || { likes: 0, bookmarks: 0 },
+          }))
+          setPrompts(transformed)
+        }
+      } catch (error) {
+        console.error('Failed to fetch prompts:', error)
+        // Fall back to static data
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchPrompts()
+  }, [])
+
+  // Filter prompts based on search and category
+  const filteredPrompts = useMemo(() => {
+    return prompts.filter(prompt => {
+      const matchesSearch = searchQuery === "" ||
+        prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prompt.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prompt.description?.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesCategory = !selectedCategory || prompt.category === selectedCategory
+
+      return matchesSearch && matchesCategory
+    })
+  }, [searchQuery, selectedCategory, prompts])
+
+  // Calculate counts per category
+  const categoryCounts = categories.map(cat => ({
+    name: cat,
+    count: prompts.filter(p => p.category === cat).length,
+  }))
+
+  // Get top 4 categories by count
+  const topCategories = categoryCounts
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4)
+
+  const categoryColors: Record<string, string> = {
+    "Portrait": "from-blue-500 to-cyan-500",
+    "Sports": "from-cyan-500 to-teal-500",
+    "Product": "from-teal-500 to-blue-500",
+    "Anime": "from-blue-500 to-indigo-500",
+    "Artistic": "from-purple-500 to-pink-500",
+    "Architecture": "from-indigo-500 to-blue-500",
+    "3D Render": "from-cyan-500 to-blue-500",
+  }
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
       <section className="text-center space-y-6 py-12">
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          </div>
+        )}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -113,38 +116,71 @@ export default function HomePage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search prompts..."
-              className="glass-input pl-10 h-12 text-base"
+              placeholder="Search prompts by title, content..."
+              className="glass-input pl-10 h-12 text-base pr-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
+          {searchQuery && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Found {filteredPrompts.length} result{filteredPrompts.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {/* Quick Filters */}
         <div className="flex flex-wrap justify-center gap-2">
-          <FilterChip icon={<TrendingUp className="h-3 w-3" />} label="Trending" />
-          <FilterChip icon={<Clock className="h-3 w-3" />} label="Newest" />
-          <FilterChip label="Sci-Fi" />
-          <FilterChip label="Fantasy" />
-          <FilterChip label="Abstract" />
-          <FilterChip label="Nature" />
+          <FilterChip
+            active={selectedCategory === null}
+            icon={<TrendingUp className="h-3 w-3" />}
+            label="All"
+            onClick={() => setSelectedCategory(null)}
+          />
+          {categories.map(cat => (
+            <FilterChip
+              key={cat}
+              active={selectedCategory === cat}
+              label={cat}
+              onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+            />
+          ))}
         </div>
       </section>
 
       {/* Featured Prompts */}
       <section>
         <PromptGrid
-          prompts={samplePrompts}
-          title="Featured Prompts"
-          description="Hand-picked prompts that produce stunning results"
+          prompts={filteredPrompts}
+          title={searchQuery || selectedCategory ? undefined : "Featured Prompts"}
+          description={searchQuery || selectedCategory ? undefined : "Hand-picked prompts that produce stunning results"}
         />
+        {filteredPrompts.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg">No prompts found</p>
+            <p className="text-muted-foreground text-sm mt-2">Try a different search term or category</p>
+          </div>
+        )}
       </section>
 
       {/* Categories */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <CategoryCard name="Sci-Fi" count={124} color="from-blue-500 to-cyan-500" />
-        <CategoryCard name="Fantasy" count={98} color="from-cyan-500 to-teal-500" />
-        <CategoryCard name="Abstract" count={76} color="from-teal-500 to-blue-500" />
-        <CategoryCard name="Nature" count={89} color="from-blue-500 to-indigo-500" />
+        {topCategories.map(cat => (
+          <CategoryCard
+            key={cat.name}
+            name={cat.name}
+            count={cat.count}
+            color={categoryColors[cat.name] || "from-blue-500 to-cyan-500"}
+          />
+        ))}
       </section>
     </div>
   )
@@ -153,12 +189,23 @@ export default function HomePage() {
 function FilterChip({
   icon,
   label,
+  active,
+  onClick,
 }: {
   icon?: React.ReactNode
   label: string
+  active?: boolean
+  onClick?: () => void
 }) {
   return (
-    <button className="px-4 py-2 rounded-full glass text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2">
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+        active
+          ? "bg-blue-500 text-white shadow-md"
+          : "glass hover:bg-white/20"
+      }`}
+    >
       {icon}
       {label}
     </button>

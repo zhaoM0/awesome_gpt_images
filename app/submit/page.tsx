@@ -50,26 +50,56 @@ export default function SubmitPage() {
     setIsSubmitting(true)
 
     try {
-      // TODO: Implement actual submission logic
-      // 1. Upload images to Vercel Blob
-      // 2. Create prompt in database
-      // 3. Create image records
+      // Upload images to Vercel Blob
+      const imageUrls: Array<{ url: string; model: string }> = []
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      for (const img of images) {
+        const formData = new FormData()
+        formData.append('file', img.file)
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image')
+        }
+
+        const { url } = await uploadRes.json()
+        imageUrls.push({ url, model: img.model })
+      }
+
+      // Create prompt with images
+      const promptRes = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          content: formData.content,
+          description: formData.description,
+          category: formData.category,
+          images: imageUrls,
+        }),
+      })
+
+      if (!promptRes.ok) {
+        throw new Error('Failed to create prompt')
+      }
 
       alert("Prompt submitted for review!")
       setFormData({ title: "", content: "", description: "", category: "" })
       setImages([])
     } catch (error) {
       console.error("Submission error:", error)
-      alert("Failed to submit prompt")
+      alert("Failed to submit prompt. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const models = ["gpt-image2", "nano-banana", "midjourney", "stable-diffusion", "dall-e-3"]
-  const categories = ["Sci-Fi", "Fantasy", "Abstract", "Nature", "Portrait", "Landscape", "Steampunk", "Retro"]
+  const categories = ["Portrait", "Sports", "Product", "Anime", "Artistic", "Architecture", "3D Render"]
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

@@ -48,7 +48,7 @@ export function PromptCard({ prompt, index = 0 }: PromptCardProps) {
       <Link href={`/prompt/${prompt.id}`}>
         <GlassCard variant="card" hover className="h-full overflow-hidden group">
           {/* Image Preview */}
-          <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-t-2xl bg-black/5 dark:bg-white/5">
             {coverImage ? (
               <>
                 {/* Main Image */}
@@ -59,7 +59,7 @@ export function PromptCard({ prompt, index = 0 }: PromptCardProps) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
 
                 {/* Image Hover Dots */}

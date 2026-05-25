@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "migrate:images": "tsx scripts/migrate-images.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -19,7 +20,7 @@
     "@base-ui/react": "^1.4.1",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^7.8.0",
-    "@vercel/blob": "^2.3.3",
+    "@vercel/blob": "^2.4.0",
     "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
