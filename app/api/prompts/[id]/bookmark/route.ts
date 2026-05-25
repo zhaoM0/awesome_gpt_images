@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // TODO: Get user ID from session
     const userId = "user-id-placeholder"
 
     const bookmark = await prisma.bookmark.create({
       data: {
         userId,
-        promptId: params.id,
+        promptId: id,
       },
     })
 
@@ -27,16 +28,17 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // TODO: Get user ID from session
     const userId = "user-id-placeholder"
 
     await prisma.bookmark.deleteMany({
       where: {
         userId,
-        promptId: params.id,
+        promptId: id,
       },
     })
 
