@@ -51,7 +51,6 @@ model User {
   bookmarks Bookmark[]
   accounts  Account[]
   sessions  Session[]
-  verificationToken VerificationToken?
 }
 
 model Like {
